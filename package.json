@@ -1,17 +1,17 @@
 {
-  "name": "@syfxlin/tiptap-starter-kit",
+  "name": "@mlogclub/tiptap-starter-kit",
   "type": "module",
-  "version": "0.0.0-semantic-release",
+  "version": "1.0.1",
   "description": "The non-official starter kit of the Tiptap editor contains common extensions.",
-  "author": "syfxlin <i@ixk.me>",
+  "author": "mlogclub<mlog1@qq.com>",
   "license": "MIT",
-  "homepage": "https://github.com/syfxlin/tiptap-starter-kit",
+  "homepage": "https://github.com/mlogclub/tiptap-starter-kit",
   "repository": {
     "type": "git",
-    "url": "https://github.com/syfxlin/tiptap-starter-kit"
+    "url": "git+https://github.com/mlogclub/tiptap-starter-kit.git"
   },
   "bugs": {
-    "url": "https://github.com/syfxlin/tiptap-starter-kit/issues"
+    "url": "https://github.com/mlogclub/tiptap-starter-kit/issues"
   },
   "keywords": [
     "tiptap",
