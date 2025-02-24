@@ -1,6 +1,6 @@
 import { OrderedList as TOrderedList, OrderedListOptions as TOrderedListOptions } from "@tiptap/extension-ordered-list";
-import { NodeMarkdownStorage } from "../extensions/markdown";
 import { BlockMenuItemStorage } from "../extensions/block-menu/menu";
+import { NodeMarkdownStorage } from "../extensions/markdown";
 import { icon } from "../utils/icons";
 
 export interface OrderedListOptions extends TOrderedListOptions {
@@ -10,6 +10,7 @@ export interface OrderedListOptions extends TOrderedListOptions {
 }
 
 export const OrderedList = TOrderedList.extend<OrderedListOptions>({
+  name: "orderedList",
   addOptions() {
     return {
       ...this.parent?.(),

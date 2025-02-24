@@ -1,7 +1,7 @@
-import { Bold as TBold, BoldOptions as TBoldOptions } from "@tiptap/extension-bold";
 import { markInputRule, markPasteRule } from "@tiptap/core";
-import { MarkMarkdownStorage } from "../extensions/markdown";
+import { Bold as TBold, BoldOptions as TBoldOptions } from "@tiptap/extension-bold";
 import { FloatMenuItemStorage } from "../extensions/float-menu/menu";
+import { MarkMarkdownStorage } from "../extensions/markdown";
 import { icon } from "../utils/icons";
 
 const STAR_INPUT_REGEX = /(?:^|[^*])(\*\*(?!\s+\*\*)([^*]+)\*\*)$/;
@@ -16,6 +16,7 @@ export interface BoldOptions extends TBoldOptions {
 }
 
 export const Bold = TBold.extend<BoldOptions>({
+  name: "bold",
   addOptions() {
     return {
       ...this.parent?.(),
@@ -50,10 +51,10 @@ export const Bold = TBold.extend<BoldOptions>({
           {
             id: this.name,
             name: this.options.dictionary.name,
-            view: icon("bold"),
+            icon: icon("bold"),
             shortcut: "Mod-B",
-            active: ({ editor }) => editor.isActive(this.name),
-            action: ({ editor }) => editor.chain().toggleBold().focus().run(),
+            active: editor => editor.isActive(this.name),
+            action: editor => editor.chain().toggleBold().focus().run(),
           },
         ],
       },

@@ -2,8 +2,8 @@ import {
   HorizontalRule as THorizontalRule,
   HorizontalRuleOptions as THorizontalRuleOptions,
 } from "@tiptap/extension-horizontal-rule";
-import { NodeMarkdownStorage } from "../extensions/markdown";
 import { BlockMenuItemStorage } from "../extensions/block-menu/menu";
+import { NodeMarkdownStorage } from "../extensions/markdown";
 import { icon } from "../utils/icons";
 
 export interface HorizontalRuleOptions extends THorizontalRuleOptions {
@@ -13,6 +13,7 @@ export interface HorizontalRuleOptions extends THorizontalRuleOptions {
 }
 
 export const HorizontalRule = THorizontalRule.extend<HorizontalRuleOptions>({
+  name: "horizontalRule",
   addOptions() {
     return {
       ...this.parent?.(),

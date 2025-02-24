@@ -1,9 +1,11 @@
 import { ListItem as TListItem, ListItemOptions as TListItemOptions } from "@tiptap/extension-list-item";
 import { NodeMarkdownStorage } from "../extensions/markdown";
 
-export interface ListItemOptions extends TListItemOptions {}
+export interface ListItemOptions extends TListItemOptions {
+}
 
 export const ListItem = TListItem.extend<ListItemOptions>({
+  name: "listItem",
   addStorage() {
     return {
       ...this.parent?.(),

@@ -1,7 +1,7 @@
-import { Strike as TStrike, StrikeOptions as TStrikeOptions } from "@tiptap/extension-strike";
 import { markInputRule, markPasteRule } from "@tiptap/core";
-import { MarkMarkdownStorage } from "../extensions/markdown";
+import { Strike as TStrike, StrikeOptions as TStrikeOptions } from "@tiptap/extension-strike";
 import { FloatMenuItemStorage } from "../extensions/float-menu/menu";
+import { MarkMarkdownStorage } from "../extensions/markdown";
 import { icon } from "../utils/icons";
 
 const INPUT_REGEX = /(?:^|[^~])(~~(?!\s+~~)([^~]+)~~)$/;
@@ -14,6 +14,7 @@ export interface StrikeOptions extends TStrikeOptions {
 }
 
 export const Strike = TStrike.extend<StrikeOptions>({
+  name: "strike",
   addOptions() {
     return {
       ...this.parent?.(),
@@ -48,10 +49,10 @@ export const Strike = TStrike.extend<StrikeOptions>({
           {
             id: this.name,
             name: this.options.dictionary.name,
-            view: icon("strike"),
+            icon: icon("strike"),
             shortcut: "Mod-Shift-I",
-            active: ({ editor }) => editor.isActive(this.name),
-            action: ({ editor }) => editor.chain().toggleStrike().focus().run(),
+            active: editor => editor.isActive(this.name),
+            action: editor => editor.chain().toggleStrike().focus().run(),
           },
         ],
       },

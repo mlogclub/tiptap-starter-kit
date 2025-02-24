@@ -1,13 +1,13 @@
-import { Editor, Node, mergeAttributes, nodeInputRule } from "@tiptap/core";
+import { Editor, mergeAttributes, Node, nodeInputRule } from "@tiptap/core";
 import { Node as PNode } from "@tiptap/pm/model";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
-import { NodeMarkdownStorage } from "../extensions/markdown";
-import { parseAttributes } from "../utils/editor";
-import { FloatMenuView } from "../extensions/float-menu/view";
-import { icon } from "../utils/icons";
 import { BlockMenuItemStorage } from "../extensions/block-menu/menu";
-import { InnerResizerView } from "../extensions/node-view/inner-resizer";
+import { FloatMenuView } from "../extensions/float-menu/view";
+import { NodeMarkdownStorage } from "../extensions/markdown";
 import { unwrap, wrap } from "../extensions/markdown/plugins/wrap";
+import { InnerResizerView } from "../extensions/node-view/inner-resizer";
+import { parseAttributes, setAttributes } from "../utils/editor";
+import { icon } from "../utils/icons";
 
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {
@@ -19,8 +19,8 @@ declare module "@tiptap/core" {
 
 export interface EmbedItem {
   name: string;
-  match: (props: { editor: Editor; node: PNode; element: HTMLIFrameElement }) => string | boolean | undefined | null;
-  render: (props: { editor: Editor; node: PNode; element: HTMLIFrameElement }) => void;
+  match: (props: { editor: Editor; view: InnerResizerView; node: PNode; element: HTMLIFrameElement }) => string | boolean | undefined | null;
+  render: (props: { editor: Editor; view: InnerResizerView; node: PNode; element: HTMLIFrameElement }) => void;
 }
 
 export interface EmbedOptions {
@@ -48,7 +48,45 @@ export const Embed = Node.create<EmbedOptions>({
   },
   addOptions() {
     return {
-      items: [],
+      items: [
+        {
+          name: "GitHub Gist",
+          match: ({ node }) => {
+            return node.attrs.src?.match(/(?:https?:\/\/)?gist\.github\.?com\/?(.*)$/i);
+          },
+          render: ({ editor, view, node, element }) => {
+            const match = node.attrs.src?.match(/(?:https?:\/\/)?gist\.github\.?com\/?(.*)$/i);
+            if (!match) {
+              return;
+            }
+            window.addEventListener("message", (e) => {
+              if (e.data?.type === "resize" && e.data?.value) {
+                if (Math.abs(node.attrs.height - e.data.value) > 5) {
+                  setAttributes(editor, view.getPos, {
+                    ...node.attrs,
+                    height: e.data.value,
+                  });
+                }
+              }
+            });
+            element.src = `
+              data:text/html;charset=utf-8,
+              <head>
+                <base target='_blank' />
+                <title>GitHub Gist</title>
+              </head>
+              <body>
+                <script src="https://gist.github.com/${match[1]}.js"></script>
+                <script>
+                  window.addEventListener("load", () => {
+                    window.parent.postMessage({ type: "resize", value: document.body.scrollHeight }, "*");
+                  });
+                </script>
+              </body>
+            `;
+          },
+        },
+      ],
       inline: false,
       HTMLAttributes: {},
       dictionary: {
@@ -131,7 +169,7 @@ export const Embed = Node.create<EmbedOptions>({
   addNodeView() {
     return InnerResizerView.create({
       HTMLAttributes: this.options.HTMLAttributes,
-      onInit: ({ view }) => {
+      onInit: ({ editor, view }) => {
         const ifr = document.createElement("iframe");
         for (const [key, value] of Object.entries(mergeAttributes(view.HTMLAttributes))) {
           if (value !== undefined && value !== null) {
@@ -140,13 +178,25 @@ export const Embed = Node.create<EmbedOptions>({
         }
         ifr.src = view.node.attrs.src ?? "";
         view.$root.append(ifr);
+        for (const item of this.options.items) {
+          if (item.match({ editor, view, node: view.node, element: ifr })) {
+            item.render({ editor, view, node: view.node, element: ifr });
+            break;
+          }
+        }
       },
-      onUpdate: ({ view }) => {
+      onUpdate: ({ editor, view }) => {
         const ifr = view.$root.firstElementChild as HTMLIFrameElement;
         if (ifr) {
           const src = view.node.attrs.src ?? "";
           if (ifr.getAttribute("src") !== src) {
             ifr.src = src;
+          }
+          for (const item of this.options.items) {
+            if (item.match({ editor, view, node: view.node, element: ifr })) {
+              item.render({ editor, view, node: view.node, element: ifr });
+              break;
+            }
           }
         }
       },
@@ -165,7 +215,7 @@ export const Embed = Node.create<EmbedOptions>({
   addInputRules() {
     return [
       nodeInputRule({
-        find: /(:embed{([^}]+)})/,
+        find: /(:embed\{([^}]+)\})/,
         type: this.type,
         getAttributes: match => parseAttributes(match[2]),
       }),
@@ -177,10 +227,15 @@ export const Embed = Node.create<EmbedOptions>({
         key: new PluginKey(`${this.name}-float-menu`),
         view: FloatMenuView.create({
           editor: this.editor,
-          show: ({ editor }) => editor.isEditable && editor.isActive(this.name),
-          tippy: ({ options }) => ({ ...options, onMount: i => i.popper.querySelector("input")?.focus() }),
-          onInit: ({ view, editor, element }) => {
+          tippy: {
+            placement: "bottom",
+          },
+          show: ({ editor }) => {
+            return editor.isEditable && editor.isActive(this.name);
+          },
+          onInit: ({ view, editor, root }) => {
             const href = view.createInput({
+              id: "href",
               name: this.options.dictionary.inputEmbed,
               onEnter: (value) => {
                 editor.chain()
@@ -198,8 +253,9 @@ export const Embed = Node.create<EmbedOptions>({
             });
 
             const open = view.createButton({
+              id: "open",
               name: this.options.dictionary.openEmbed,
-              view: icon("open"),
+              icon: icon("open"),
               onClick: () => {
                 const attrs = editor.getAttributes(this.name);
                 if (attrs.src) {
@@ -208,37 +264,52 @@ export const Embed = Node.create<EmbedOptions>({
               },
             });
             const remove = view.createButton({
+              id: "remove",
               name: this.options.dictionary.deleteEmbed,
-              view: icon("remove"),
+              icon: icon("remove"),
               onClick: () => {
                 editor.chain().deleteSelection().focus().run();
               },
             });
             const alignLeft = view.createButton({
+              id: "align-left",
               name: this.options.dictionary.alignLeft,
-              view: icon("align-left"),
+              icon: icon("align-left"),
               onClick: () => editor.chain().updateAttributes(this.name, { align: "left" }).run(),
             });
             const alignCenter = view.createButton({
+              id: "align-center",
               name: this.options.dictionary.alignCenter,
-              view: icon("align-center"),
+              icon: icon("align-center"),
               onClick: () => editor.chain().updateAttributes(this.name, { align: "center" }).run(),
             });
             const alignRight = view.createButton({
+              id: "align-right",
               name: this.options.dictionary.alignRight,
-              view: icon("align-right"),
+              icon: icon("align-right"),
               onClick: () => editor.chain().updateAttributes(this.name, { align: "right" }).run(),
             });
 
-            element.append(href.input);
-            element.append(alignLeft.button);
-            element.append(alignCenter.button);
-            element.append(alignRight.button);
-            element.append(open.button);
-            element.append(remove.button);
+            const form = view.createForm();
+            const action = view.createAction();
+
+            form.append(href);
+            form.append(action);
+            action.append(open);
+            action.append(alignLeft);
+            action.append(alignCenter);
+            action.append(alignRight);
+            action.append(remove);
+            root.append(form);
           },
-          onUpdate: ({ editor, element }) => {
-            const href = element.querySelector("input") as HTMLInputElement;
+          onMount: ({ root }) => {
+            const href = root.querySelector("input") as HTMLInputElement;
+            if (href) {
+              href.focus();
+            }
+          },
+          onUpdate: ({ editor, root }) => {
+            const href = root.querySelector("input") as HTMLInputElement;
             if (href) {
               href.value = editor.getAttributes(this.name).src ?? "";
             }

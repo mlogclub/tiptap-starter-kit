@@ -1,6 +1,6 @@
 import { Blockquote as IBlockquote, BlockquoteOptions as TBlockquoteOptions } from "@tiptap/extension-blockquote";
-import { NodeMarkdownStorage } from "../extensions/markdown";
 import { BlockMenuItemStorage } from "../extensions/block-menu/menu";
+import { NodeMarkdownStorage } from "../extensions/markdown";
 import { icon } from "../utils/icons";
 
 export interface BlockquoteOptions extends TBlockquoteOptions {
@@ -10,6 +10,7 @@ export interface BlockquoteOptions extends TBlockquoteOptions {
 }
 
 export const Blockquote = IBlockquote.extend<BlockquoteOptions>({
+  name: "blockquote",
   addOptions() {
     return {
       ...this.parent?.(),

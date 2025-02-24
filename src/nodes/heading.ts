@@ -1,6 +1,6 @@
 import { Heading as THeading, HeadingOptions as THeadingOptions } from "@tiptap/extension-heading";
-import { NodeMarkdownStorage } from "../extensions/markdown";
 import { BlockMenuItemStorage } from "../extensions/block-menu/menu";
+import { NodeMarkdownStorage } from "../extensions/markdown";
 import { icon } from "../utils/icons";
 
 export interface HeadingOptions extends THeadingOptions {
@@ -10,6 +10,7 @@ export interface HeadingOptions extends THeadingOptions {
 }
 
 export const Heading = THeading.extend<HeadingOptions>({
+  name: "heading",
   addOptions() {
     return {
       ...this.parent?.(),
